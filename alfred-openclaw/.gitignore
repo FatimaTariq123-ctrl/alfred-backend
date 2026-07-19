@@ -1,16 +1,4 @@
 # ===========================================
-# ML model outputs & large data files
-# ===========================================
-clax-ml/**/outputs/
-clax-ml/**/models/
-clax-ml/**/__pycache__/
-clax-ml/**/*.onnx*
-clax-ml/**/*.pth
-clax-ml/**/*.pkl
-clax-ml/**/*.joblib
-clax-ml/**/*.csv
-
-# ===========================================
 # Secrets & credentials — NEVER commit
 # ===========================================
 .env
@@ -26,6 +14,7 @@ agents/main/agent/auth-state.json
 # Runtime state — auto-generated, do not commit
 # ===========================================
 agents/main/sessions/sessions.json
+agents/main/sessions/*.jsonl
 tasks/*.sqlite*
 tasks/*.sqlite-shm
 tasks/*.sqlite-wal

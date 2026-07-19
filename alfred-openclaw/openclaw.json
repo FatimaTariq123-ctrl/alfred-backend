@@ -1,0 +1,156 @@
+{
+  "gateway": {
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    },
+    "mode": "local",
+    "port": 18789,
+    "bind": "loopback",
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "controlUi": {
+      "allowInsecureAuth": true,
+      "allowedOrigins": [
+        "http://localhost:18789",
+        "http://127.0.0.1:18789"
+      ]
+    },
+    "http": {
+      "endpoints": {
+        "responses": {
+          "enabled": true
+        }
+      }
+    },
+    "nodes": {
+      "denyCommands": [
+        "camera.snap",
+        "camera.clip",
+        "screen.record",
+        "contacts.add",
+        "calendar.add",
+        "reminders.add",
+        "sms.send",
+        "sms.search"
+      ]
+    }
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "~/Alfred/alfred-openclaw/workspace",
+      "model": {
+        "primary": "google/gemini-3.1-pro-preview",
+        "fallbacks": [
+          "google/gemini-2.5-flash"
+        ]
+      },
+      "models": {
+        "google/gemini-3.1-pro-preview": {},
+        "google/gemini-2.5-flash": {}
+      }
+    }
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "tools": {
+    "profile": "coding",
+    "web": {
+      "search": {
+        "provider": "brave"
+      }
+    }
+  },
+  "mcp": {
+    "servers": {
+      "investor-dna": {
+        "command": "python3",
+        "args": [
+          "~/Alfred/clax-agents/investor-dna/mcp_server.py"
+        ],
+        "env": {
+          "NEON_DATABASE_URL": "YOUR_NEON_DATABASE_URL"
+        }
+      },
+      "macro-context-agent": {
+        "command": "python3",
+        "args": [
+          "~/Alfred/clax-agents/macro-context-agent/mcp_server.py"
+        ],
+        "env": {
+          "GEMINI_API_KEY": "YOUR_GEMINI_API_KEY",
+          "NEON_DATABASE_URL": "YOUR_NEON_DATABASE_URL"
+        }
+      },
+      "fact-guard-agent": {
+        "command": "python3",
+        "args": [
+          "~/Alfred/clax-agents/fact-guard-agent/mcp_server.py"
+        ],
+        "env": {
+          "GEMINI_API_KEY": "YOUR_GEMINI_API_KEY",
+          "NEON_DATABASE_URL": "YOUR_NEON_DATABASE_URL"
+        }
+      },
+      "guardrail-guard-agent": {
+        "command": "python3",
+        "args": [
+          "~/Alfred/clax-agents/guardrail_guard_agent/mcp_wrapper.py"
+        ]
+      },
+      "order-router-agent": {
+        "command": "python3",
+        "args": [
+          "~/Alfred/clax-agents/order-router-agent/mcp_wrapper.py"
+        ],
+        "env": {
+          "GEMINI_API_KEY": "YOUR_GEMINI_API_KEY"
+        }
+      },
+      "quant-bridge-agent": {
+        "command": "python3",
+        "args": [
+          "~/Alfred/clax-agents/quant-bridge-agent/mcp_server.py"
+        ]
+      }
+    }
+  },
+  "auth": {
+    "profiles": {
+      "google:default": {
+        "provider": "google",
+        "mode": "api_key"
+      }
+    }
+  },
+  "channels": {
+    "whatsapp": {
+      "selfChatMode": true,
+      "dmPolicy": "allowlist",
+      "allowFrom": [
+        "YOUR_PHONE_NUMBER"
+      ],
+      "enabled": true
+    }
+  },
+  "wizard": {
+    "lastRunAt": "2026-04-12T08:43:59.022Z",
+    "lastRunVersion": "2026.4.11",
+    "lastRunCommand": "configure",
+    "lastRunMode": "local"
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.4.11",
+    "lastTouchedAt": "2026-07-19T16:48:14.210Z"
+  },
+  "plugins": {
+    "entries": {
+      "google": {
+        "enabled": true
+      }
+    }
+  }
+}

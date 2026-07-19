@@ -1,0 +1,7 @@
+{
+  "name": "order-router-agent",
+  "entrypoint": "mcp_wrapper.py",
+  "description": "Translates user trade intent into a strict structured order payload for downstream guardrails and execution systems.",
+  "capabilities": ["order-routing", "structured-extraction"],
+  "transport": "stdio"
+}

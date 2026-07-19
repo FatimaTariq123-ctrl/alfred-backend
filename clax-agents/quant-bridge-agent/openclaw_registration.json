@@ -1,0 +1,7 @@
+{
+  "name": "quant-bridge-agent",
+  "entrypoint": "mcp_server.py",
+  "description": "Exposes the core quantitative S&P 500 predictive, asset-ranking, and portfolio optimization ML services as stdio MCP tools.",
+  "capabilities": ["quantitative-signals", "asset-ranking", "portfolio-rebalancing"],
+  "transport": "stdio"
+}
