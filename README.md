@@ -79,11 +79,11 @@ Edit `.env` and set the required values:
 
 Optional variables have sensible defaults in `.env.example`.
 
-### 5. Run database migrations
+### 5. Run database migrations (optional)
 
 ```bash
-cd alfred-openclaw
 export NEON_DATABASE_URL="your_connection_string"
+cd alfred-openclaw
 python scripts/run_migration.py
 python scripts/run_sanctions_migration.py
 ```
@@ -93,7 +93,6 @@ python scripts/run_sanctions_migration.py
 From the `alfred-openclaw/` directory:
 
 ```bash
-cd alfred-openclaw
 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
