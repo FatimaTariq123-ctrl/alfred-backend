@@ -60,6 +60,22 @@ class IdempotencyEngine:
         except Exception as e:
             logger.error(f"Redis error during set_success: {e}")
 
+    async def set_reconciling(self, user_id: str, idempotency_key: str):
+        """Update the lock to RECONCILING for background workers to pick up safely."""
+        if not self.redis:
+            logger.warning("Redis unavailable. Bypassing set_reconciling.")
+            return
+
+        key = self._get_key(user_id, idempotency_key)
+        try:
+            ttl = await self.redis.ttl(key)
+            if ttl > 0:
+                await self.redis.set(key, "RECONCILING", ex=ttl)
+            else:
+                await self.redis.set(key, "RECONCILING", ex=86400)
+        except Exception as e:
+            logger.error(f"Redis error during set_reconciling: {e}")
+
     async def release_lock(self, user_id: str, idempotency_key: str):
         """Delete the lock (used for rollbacks/vetoes)."""
         if not self.redis:

@@ -6,6 +6,10 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 
+# Add app to python path to import settings
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+from app.core.config import settings
+
 # 1. Cloud-Native Logging (Twelve-Factor: stdout only, no local /tmp files)
 logging.basicConfig(
     stream=sys.stdout, 
@@ -14,20 +18,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("d5_reconciliation_worker")
 
-# 2. Native OS Environment Lookups (No .env files allowed)
-class ConfigurationError(Exception):
-    pass
-
-def get_env_var(var_name: str) -> str:
-    value = os.environ.get(var_name)
-    if not value:
-        raise ConfigurationError(f"Missing mandatory environment variable: {var_name}")
-    return value
-
 # 3. Database Connection Pooling (Matches A2 constraints)
 # pool_size=10, max_overflow=20 prevents session starvation
 engine = create_async_engine(
-    get_env_var("DATABASE_URL"), 
+    settings.DATABASE_URL, 
     pool_size=10, 
     max_overflow=20
 )
@@ -97,24 +91,17 @@ async def process_trade_by_id(trade_id: int):
                     
             except Exception as e:
                 logger.error(f"Exception during trade {trade_id} execution: {e}")
-                # We do NOT rollback here if it's just a network exception from execute_trade_downstream,
-                # because we want to maintain the FOR UPDATE lock across retries.
-                # However, if it's a DB error, the transaction is invalid.
                 
             if attempt < len(delays):
                 await asyncio.sleep(delay)
                 
         # Step 3: Terminal Failure if all retries are exhausted
-        try:
-            logger.error(f"Trade {trade_id} exhausted all 3 bounded retries. Marking FAILED.")
-            await session.execute(
-                text("UPDATE clax_trade_ledger SET status = 'FAILED' WHERE id = :id"),
-                {"id": trade_id}
-            )
-            await session.commit()
-        except Exception as e:
-            logger.error(f"Exception updating terminal failure for trade {trade_id}: {e}")
-            await session.rollback()
+        logger.error(f"Trade {trade_id} exhausted all 3 bounded retries. Marking FAILED.")
+        await session.execute(
+            text("UPDATE clax_trade_ledger SET status = 'FAILED' WHERE id = :id"),
+            {"id": trade_id}
+        )
+        await session.commit()
 
 async def worker_loop():
     """
