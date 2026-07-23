@@ -1,0 +1,2 @@
+# Task 1: Isolate Agent Runtime State Per Request
+This branch implements the removal of shared global state in ML prediction scripts and removes the hardcoded `.env` file loading in agents. This ensures that concurrent serverless executions do not cross-pollute user data.
