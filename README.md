@@ -119,3 +119,6 @@ Core backend infrastructure shared across all agents. Includes the FastAPI gatew
 | `Optimal-Entry-Price` | Identifies optimal entry points for trades using ML-driven signals. |
 | `Portfolio-Rebalancing` | Automates portfolio rebalancing based on target allocations and market conditions. |
 | `Top-10-monthly-picks` | Generates a ranked list of the top 10 investment picks each month. |
+
+## Task: Dockerize the Project
+**Update:** Created a Dockerfile for the core API service and a docker-compose.yml to seamlessly orchestrate the API, Redis cache, and background reconciliation worker using .env injections.
