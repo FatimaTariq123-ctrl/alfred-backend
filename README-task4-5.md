@@ -1,2 +1,0 @@
-# Tasks 4 & 5: Compliance Firewalls & Risk Logic
-This branch introduces hardcoded business logic checks in the Guardrail Agent. It intercepts restricted SFC sanctions tokens, enforces Macro Context blocked sectors (e.g., ENERGY), and blocks high-risk assets if the user's Investor DNA profile falls into a conservative tier.
