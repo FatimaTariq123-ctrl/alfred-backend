@@ -3,7 +3,7 @@ from typing import Any
 
 import httpx
 
-from app.core.config import (
+from app.config.config import (
     OPENCLAW_AGENT_ID,
     OPENCLAW_GATEWAY_TOKEN,
     OPENCLAW_GATEWAY_URL,
