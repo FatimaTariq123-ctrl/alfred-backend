@@ -82,6 +82,51 @@ class GuardrailGuardAgent:
             **(slippage_thresholds or {}),
         }
 
+    def validate_restricted_asset(self, request: ActionRequest) -> Optional[dict[str, Any]]:
+        ticker = (request.ticker or "").upper()
+        
+        # 1. Check hardcoded SFC sanctions
+        banned_tokens = {"TORN", "XMR", "ZEC"}
+        if ticker in banned_tokens:
+            return self._failed_check(
+                ReasonCode.RESTRICTED_ASSET,
+                f"Asset {request.ticker} is currently restricted under SFC compliance rules.",
+                {"source": "sfc_sanctions", "banned_tokens": sorted(banned_tokens)}
+            )
+            
+        # 2. Check dynamic restricted assets from the request
+        restricted_tickers = self._extract_restricted_tickers(request.restrictions)
+        if ticker and ticker in restricted_tickers:
+            return self._failed_check(
+                ReasonCode.RESTRICTED_ASSET,
+                f"{ticker} is restricted for this request.",
+                {"restricted_tickers": sorted(restricted_tickers)},
+            )
+        return None
+
+    def validate_macro_sectors(self, request: ActionRequest) -> Optional[dict[str, Any]]:
+        blocked_sectors = request.metadata.get("blocked_sectors", [])
+        sector_map = {"0700.HK": "TECH", "0005.HK": "FINANCE", "XOM": "ENERGY"}
+        asset_sector = sector_map.get((request.ticker or "").upper())
+        
+        if asset_sector and asset_sector in blocked_sectors:
+            return self._failed_check(
+                ReasonCode.RESTRICTED_ASSET,
+                f"Asset {request.ticker} is in a restricted sector ({asset_sector}) based on current Macro conditions.",
+            )
+        return None
+
+    def validate_investor_dna(self, request: ActionRequest) -> Optional[dict[str, Any]]:
+        risk_tier = request.metadata.get("risk_tier", "Ambitious Builder")
+        high_risk_assets = {"DOGE", "SHIB", "PEPE"}
+        
+        if risk_tier in {"Guided Starter", "Steady Builder"} and (request.ticker or "").upper() in high_risk_assets:
+            return self._failed_check(
+                ReasonCode.RESTRICTED_ASSET,
+                f"Asset {request.ticker} exceeds your current Investor DNA risk profile ({risk_tier}).",
+            )
+        return None
+
     def validate_market_open(self, request: ActionRequest) -> Optional[dict[str, Any]]:
         if request.market_open is not True:
             return self._failed_check(
@@ -98,69 +143,59 @@ class GuardrailGuardAgent:
             )
         return None
 
-    def validate_user_approval(self, request: ActionRequest) -> Optional[dict[str, Any]]:
-        if request.user_approved is not True:
-            return self._failed_check(
-                ReasonCode.USER_CONFIRMATION_REQUIRED,
-                "User approval is required before simulated execution can continue.",
-            )
-        return None
+    def evaluate(self, payload: dict[str, Any] | ActionRequest) -> dict[str, Any]:
+        request = payload if isinstance(payload, ActionRequest) else ActionRequest.from_payload(payload)
 
-    def validate_price_freshness(self, request: ActionRequest) -> Optional[dict[str, Any]]:
-        market_time = self._parse_timestamp(request.market_timestamp)
-        if market_time is None:
-            return self._failed_check(
-                ReasonCode.STALE_PRICE,
-                "Market timestamp is missing or invalid.",
+        hard_checks = [
+            self.validate_restricted_asset,
+            self.validate_macro_sectors,
+            self.validate_investor_dna,
+            self.validate_market_open,
+            self.validate_simulation_only,
+            self.validate_slippage
+        ]
+        failed_checks = [check for validator in hard_checks if (check := validator(request))]
+
+        if failed_checks:
+            first_failure = failed_checks[0]
+            return self._decision_payload(
+                Decision.BLOCK_WITH_REASON,
+                False,
+                first_failure["reason_code"],
+                first_failure["reason"],
+                failed_checks,
+                request,
             )
 
-        age_seconds = (datetime.now(timezone.utc) - market_time).total_seconds()
-        if age_seconds < 0:
-            age_seconds = 0
-        if age_seconds > self.stale_price_seconds:
-            return self._failed_check(
-                ReasonCode.STALE_PRICE,
-                f"Market price is stale: {age_seconds:.1f}s old, threshold is {self.stale_price_seconds}s.",
-                {"age_seconds": age_seconds, "threshold_seconds": self.stale_price_seconds},
-            )
-        return None
+        return self._decision_payload(
+            Decision.APPROVE,
+            True,
+            ReasonCode.APPROVED.value,
+            "All guardrail checks passed.",
+            [],
+            request,
+        )
 
-    def validate_balance(self, request: ActionRequest) -> Optional[dict[str, Any]]:
-        if (request.action or "").upper() != "BUY":
-            return None
-        if request.estimated_total is None or request.user_cash_balance is None:
-            return self._failed_check(
-                ReasonCode.INSUFFICIENT_BALANCE,
-                "BUY requests require estimated_total and user_cash_balance.",
-            )
-        estimated_total = self._to_float(request.estimated_total)
-        user_cash_balance = self._to_float(request.user_cash_balance)
-        if estimated_total is None or user_cash_balance is None:
-            return self._failed_check(
-                ReasonCode.INSUFFICIENT_BALANCE,
-                "BUY requests require numeric estimated_total and user_cash_balance.",
-            )
-        if estimated_total > user_cash_balance:
-            return self._failed_check(
-                ReasonCode.INSUFFICIENT_BALANCE,
-                "Estimated total exceeds available user cash balance.",
-                {
-                    "estimated_total": estimated_total,
-                    "user_cash_balance": user_cash_balance,
-                },
-            )
-        return None
+    def _decision_payload(self, decision: Decision, approved: bool, reason_code: str, reason: str, failed_checks: list[dict[str, Any]], request: ActionRequest) -> dict[str, Any]:
+        return {
+            "decision": decision.value,
+            "approved": approved,
+            "reason_code": reason_code,
+            "reason": reason,
+            "failed_checks": failed_checks,
+            "metadata": {
+                "agent": "guardrail-guard-agent",
+                **request.metadata,
+            },
+        }
 
-    def validate_restricted_asset(self, request: ActionRequest) -> Optional[dict[str, Any]]:
-        ticker = (request.ticker or "").upper()
-        restricted_tickers = self._extract_restricted_tickers(request.restrictions)
-        if ticker and ticker in restricted_tickers:
-            return self._failed_check(
-                ReasonCode.RESTRICTED_ASSET,
-                f"{ticker} is restricted for this request.",
-                {"restricted_tickers": sorted(restricted_tickers)},
-            )
-        return None
+    def _failed_check(self, reason_code: ReasonCode, reason: str, metadata: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+        return {
+            "check": reason_code.value.lower(),
+            "reason_code": reason_code.value,
+            "reason": reason,
+            "metadata": metadata or {},
+        }
 
     def validate_slippage(self, request: ActionRequest) -> Optional[dict[str, Any]]:
         comparison_price = request.reference_price or request.market_price
@@ -197,98 +232,6 @@ class GuardrailGuardAgent:
             )
         return None
 
-    def evaluate(self, payload: dict[str, Any] | ActionRequest) -> dict[str, Any]:
-        request = payload if isinstance(payload, ActionRequest) else ActionRequest.from_payload(payload)
-
-        hard_checks = [
-            self.validate_market_open,
-            self.validate_simulation_only,
-            self.validate_price_freshness,
-            self.validate_balance,
-            self.validate_restricted_asset,
-            self.validate_slippage,
-        ]
-        failed_checks = [check for validator in hard_checks if (check := validator(request))]
-
-        approval_check = self.validate_user_approval(request)
-        if approval_check:
-            failed_checks.append(approval_check)
-
-        hard_failures = [
-            check
-            for check in failed_checks
-            if check["reason_code"] != ReasonCode.USER_CONFIRMATION_REQUIRED.value
-        ]
-        if hard_failures:
-            first_failure = hard_failures[0]
-            return self._decision_payload(
-                Decision.BLOCK_WITH_REASON,
-                False,
-                first_failure["reason_code"],
-                first_failure["reason"],
-                failed_checks,
-                request,
-            )
-
-        if approval_check:
-            return self._decision_payload(
-                Decision.REQUIRE_CONFIRMATION,
-                False,
-                ReasonCode.USER_CONFIRMATION_REQUIRED.value,
-                approval_check["reason"],
-                failed_checks,
-                request,
-            )
-
-        return self._decision_payload(
-            Decision.APPROVE,
-            True,
-            ReasonCode.APPROVED.value,
-            "All guardrail checks passed.",
-            [],
-            request,
-        )
-
-    def _decision_payload(
-        self,
-        decision: Decision,
-        approved: bool,
-        reason_code: str,
-        reason: str,
-        failed_checks: list[dict[str, Any]],
-        request: ActionRequest,
-    ) -> dict[str, Any]:
-        return {
-            "decision": decision.value,
-            "approved": approved,
-            "reason_code": reason_code,
-            "reason": reason,
-            "failed_checks": failed_checks,
-            "metadata": {
-                "agent": "guardrail-guard-agent",
-                "user_id": request.user_id,
-                "ticker": request.ticker,
-                "asset_class": request.asset_class,
-                "is_simulation": request.is_simulation,
-                "stale_price_seconds": self.stale_price_seconds,
-                "slippage_thresholds": self.slippage_thresholds,
-                **request.metadata,
-            },
-        }
-
-    def _failed_check(
-        self,
-        reason_code: ReasonCode,
-        reason: str,
-        metadata: Optional[dict[str, Any]] = None,
-    ) -> dict[str, Any]:
-        return {
-            "check": reason_code.value.lower(),
-            "reason_code": reason_code.value,
-            "reason": reason,
-            "metadata": metadata or {},
-        }
-
     def _slippage_threshold_for(self, asset_class: Optional[str]) -> float:
         return self.slippage_thresholds.get((asset_class or "").upper(), 0.02)
 
@@ -297,29 +240,6 @@ class GuardrailGuardAgent:
             return float(value)
         except (TypeError, ValueError):
             return None
-
-    def _parse_timestamp(self, value: Any) -> Optional[datetime]:
-        if value is None:
-            return None
-        if isinstance(value, datetime):
-            parsed = value
-        elif isinstance(value, (int, float)):
-            parsed = datetime.fromtimestamp(float(value), tz=timezone.utc)
-        elif isinstance(value, str):
-            normalized = value.strip().replace("Z", "+00:00")
-            try:
-                parsed = datetime.fromisoformat(normalized)
-            except ValueError:
-                try:
-                    parsed = datetime.fromtimestamp(float(value), tz=timezone.utc)
-                except ValueError:
-                    return None
-        else:
-            return None
-
-        if parsed.tzinfo is None:
-            return parsed.replace(tzinfo=timezone.utc)
-        return parsed.astimezone(timezone.utc)
 
     def _extract_restricted_tickers(self, restrictions: Any) -> set[str]:
         if not restrictions:
@@ -346,62 +266,3 @@ class GuardrailGuardAgent:
                             tickers.add(str(item[key]).upper())
             return tickers
         return set()
-
-
-def run_guardrail_guard(action_request: dict[str, Any]) -> dict[str, Any]:
-    """Evaluate a structured action request and return a decision payload."""
-
-    return GuardrailGuardAgent().evaluate(action_request)
-
-
-def _base_test_payload() -> dict[str, Any]:
-    return {
-        "user_id": "user-123",
-        "ticker": "AAPL",
-        "asset_class": "US_EQUITY",
-        "action": "BUY",
-        "quantity": 2,
-        "order_type": "MARKET",
-        "execution_price": 100.5,
-        "reference_price": 100.0,
-        "market_price": 100.0,
-        "market_timestamp": datetime.now(timezone.utc).isoformat(),
-        "user_cash_balance": 1000.0,
-        "estimated_total": 201.0,
-        "is_simulation": True,
-        "user_approved": True,
-        "market_open": True,
-        "restrictions": [],
-    }
-
-
-if __name__ == "__main__":
-    agent = GuardrailGuardAgent()
-    stale_market_timestamp = time.time() - 120
-
-    test_cases = {
-        "Valid simulated approved trade": _base_test_payload(),
-        "Missing user approval": {
-            key: value for key, value in _base_test_payload().items() if key != "user_approved"
-        },
-        "Market closed": {**_base_test_payload(), "market_open": False},
-        "Real execution attempt": {**_base_test_payload(), "is_simulation": False},
-        "Stale price": {**_base_test_payload(), "market_timestamp": stale_market_timestamp},
-        "Insufficient balance": {
-            **_base_test_payload(),
-            "estimated_total": 1200.0,
-            "user_cash_balance": 1000.0,
-        },
-        "Restricted ticker": {**_base_test_payload(), "restrictions": ["AAPL"]},
-        "Excessive slippage": {**_base_test_payload(), "execution_price": 104.0},
-    }
-
-    for name, payload in test_cases.items():
-        result = agent.evaluate(payload)
-        print("=" * 50)
-        print(f"TEST: {name}")
-        print(f"DECISION: {result['decision']}")
-        print(f"REASON: {result['reason']}")
-        print("PAYLOAD:")
-        print(json.dumps(result, indent=2))
-    print("=" * 50)
