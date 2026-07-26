@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 # Add app to python path to import settings
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-from app.core.config import settings
+from app.config.config import settings
 
 # 1. Cloud-Native Logging (Twelve-Factor: stdout only, no local /tmp files)
 logging.basicConfig(
