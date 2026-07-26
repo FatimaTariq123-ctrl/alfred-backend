@@ -120,5 +120,3 @@ Core backend infrastructure shared across all agents. Includes the FastAPI gatew
 | `Portfolio-Rebalancing` | Automates portfolio rebalancing based on target allocations and market conditions. |
 | `Top-10-monthly-picks` | Generates a ranked list of the top 10 investment picks each month. |
 
-## Task: Implement Safe Transaction Retry Handling
-**Update:** Added bounded timeouts (asyncio.wait_for) to ML agent dispatching to prevent double executions during latency spikes. This is coupled with a new background worker that safely sweeps and reconciles stalled trades.
