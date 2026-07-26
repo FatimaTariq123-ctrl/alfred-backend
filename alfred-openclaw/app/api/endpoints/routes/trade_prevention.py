@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.schemas.trade_prevention_schema import TradeExecutionRequest
+from app.config.config import settings
 from app.services.trade_prevention_service import TradePreventionService, DuplicateTradeError
 from app.backend_services.jwt_auth.security import get_current_user
 
@@ -27,13 +28,13 @@ def execute_trade(
             "status": "requires_action",
             "error": {
                 "code": "DUPLICATE_ORDER_WINDOW",
-                "message": "An identical order was placed within the last 60 seconds.",
+                "message": f"An identical order was placed within the last {settings.DUPLICATE_TRADE_WINDOW_SECONDS} seconds.",
             },
             "requirements": {
                 "action_type": "USER_CONFIRMATION",
                 "confirmation_token": e.confirmation_token,
-                "ui_prompt": f"You just placed an identical order for {e.quantity} shares of {e.symbol}. Are you sure you want to place another?",
-                "expires_in_seconds": 60,
+                "ui_prompt": f"{settings.DUPLICATE_TRADE_PROMPT} (Symbol: {e.symbol}, Qty: {e.quantity})",
+                "expires_in_seconds": settings.DUPLICATE_TRADE_WINDOW_SECONDS,
             },
         })
     except Exception:

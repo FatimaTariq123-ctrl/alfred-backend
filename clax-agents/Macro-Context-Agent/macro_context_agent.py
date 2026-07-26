@@ -2,12 +2,9 @@ import os
 import json
 import requests
 import sys
-from dotenv import load_dotenv
 
 sys.path.append('/home/ummara/clax/shared')
 from logger import Timer
-
-load_dotenv('/home/ummara/clax/.env')
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
@@ -27,7 +24,6 @@ def call_gemini(prompt: str) -> str:
         return data["candidates"][0]["content"]["parts"][0]["text"]
     except Exception:
         return f"Error calling Gemini: {json.dumps(data)}"
-
 
 def run_macro_context(user_question: str, investor_dna: dict) -> dict:
     archetype = investor_dna.get("archetype", "Balanced Builder")

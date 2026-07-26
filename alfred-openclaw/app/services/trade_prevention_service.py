@@ -16,7 +16,8 @@ if _db_url.startswith("postgresql://"):
 engine = create_engine(_db_url, pool_size=10, max_overflow=20) if _db_url else None
 
 # Duplicate detection window in seconds
-DUPLICATE_WINDOW = 60
+from app.config.config import settings
+DUPLICATE_WINDOW = settings.DUPLICATE_TRADE_WINDOW_SECONDS
 
 
 class DuplicateTradeError(Exception):

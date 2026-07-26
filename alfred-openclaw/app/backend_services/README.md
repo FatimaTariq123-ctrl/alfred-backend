@@ -61,7 +61,7 @@ Yes — lazy import in `app/api/endpoints/routes/chat.py` for the `/chat/history
 ### Dependencies
 - `PyJWT`
 - `fastapi` (HTTPBearer, Security)
-- `app.core.config.settings` (JWT_SECRET)
+- `app.config.config.settings` (JWT_SECRET)
 
 ### HTTP Endpoints
 None (library module).
@@ -95,7 +95,7 @@ Yes — used by all active routers:
 
 ### Dependencies
 - `httpx`
-- `app.core.config` (OPENCLAW_GATEWAY_URL, OPENCLAW_GATEWAY_TOKEN, etc.)
+- `app.config.config` (OPENCLAW_GATEWAY_URL, OPENCLAW_GATEWAY_TOKEN, etc.)
 
 ### HTTP Endpoints
 None (client library).
@@ -163,7 +163,7 @@ Yes — added as app-level middleware in `main.py`.
 - `app/services/cloud_storage.py` — S3 streaming via Boto3
 - `app/services/redis_client.py` — async Redis connection pool
 - `app/schemas/payload.py` — `CLAXAgentOutputContract`, `TradeVerificationResponse`
-- `app/core/config.py` — twelve-factor configuration
+- `app.config.config.py` — twelve-factor configuration
 - `app/core/security.py` — JWT authentication
 - `test_a5.py` — integration test
 
