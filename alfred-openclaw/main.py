@@ -12,12 +12,18 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("API Gateway starting up. Initializing OpenClaw Gateway client.")
     app.state.gateway_client = GatewayClient()
-    await app.state.gateway_client.connect()
+    try:
+        await app.state.gateway_client.connect()
+    except Exception as e:
+        logger.warning(f"Failed to connect to OpenClaw Gateway on startup. Ensure ENABLE_OPENCLAW_GATEWAY is true and URL is correct: {e}")
 
     yield
 
     logger.info("API Gateway shutting down. Closing OpenClaw Gateway connection.")
-    await app.state.gateway_client.disconnect()
+    try:
+        await app.state.gateway_client.disconnect()
+    except:
+        pass
 
 
 app = FastAPI(
