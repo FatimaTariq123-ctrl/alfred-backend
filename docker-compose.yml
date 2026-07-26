@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  alfred-api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  reconciliation-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "app/backend_services/retry-reconciliation-worker/d5_reconciliation_worker.py"]
+    env_file:
+      - .env
+    depends_on:
+      - redis

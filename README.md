@@ -33,12 +33,67 @@ Alfred/
 
 ## Prerequisites
 
-- Python 3.12+
-- PostgreSQL (or Neon database)
-- Redis
-- Node.js (for `pg` driver in database_service)
+- **Docker Desktop** (Windows/macOS) or **Docker Engine** (Linux)
+- **Docker Compose**
+- Python 3.12+ (Only if running manually without Docker)
 
-## Setup
+### How to Install Docker
+- **Windows:** Download and install from [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/).
+- **macOS:** Download and install from [Docker Desktop for Mac](https://docs.docker.com/desktop/install/mac-install/).
+- **Linux:** Follow the instructions for your distribution at [Docker Engine for Linux](https://docs.docker.com/engine/install/).
+
+*(Note: The project uses a cloud-hosted PostgreSQL database, so a local PostgreSQL installation is no longer required for Docker development.)*
+
+## Setup (Docker - Recommended)
+
+The Clax Backend is fully dockerized. You do **not** need to manually install Python, FastAPI, Uvicorn, or run `pip install` locally.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/ummara-clax/ALFRED.git
+cd ALFRED
+```
+
+### 2. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+Edit `.env` and configure your cloud `DATABASE_URL` (and `NEON_DATABASE_URL`) along with other required secrets.
+
+### 3. Build and start the project
+
+```bash
+docker compose up --build
+```
+This will automatically:
+- Build the Python image.
+- Install all dependencies from `requirements.txt`.
+- Start the Redis cache.
+- Start the FastAPI backend on `http://localhost:8000`.
+- Start the background reconciliation worker.
+
+### 4. Stopping the containers
+
+To stop the running services, use `Ctrl+C` in the terminal where it's running, or run:
+```bash
+docker compose down
+```
+
+### 5. Rebuilding containers after dependency changes
+
+If you add new libraries to `requirements.txt`, you must rebuild the image:
+```bash
+docker compose up --build
+```
+
+### Troubleshooting
+- **Port 8000 / 6379 is already in use:** Ensure no local instances of Uvicorn or Redis are running on your host machine.
+- **Database Connection Errors:** Verify that your `DATABASE_URL` in `.env` points to a valid cloud PostgreSQL instance.
+- **Platform-specific Notes:** Windows users running WSL2 should ensure Docker Desktop is configured to use the WSL2 backend for better performance.
+
+## Manual Setup (Without Docker)
 
 ### 1. Clone the repository
 
