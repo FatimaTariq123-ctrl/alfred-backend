@@ -11,6 +11,8 @@ services:
       - .env
     depends_on:
       - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   redis:
     image: redis:alpine
@@ -26,3 +28,5 @@ services:
       - .env
     depends_on:
       - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
