@@ -4,7 +4,7 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.core.config import settings
+from app.config.config import settings
 
 security = HTTPBearer()
 SECRET_KEY = settings["JWT_SECRET"]
