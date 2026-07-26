@@ -33,12 +33,19 @@ Alfred/
 
 ## Prerequisites
 
-- Python 3.12+
-- PostgreSQL (or Neon database)
-- Redis
-- Node.js (for `pg` driver in database_service)
+- **Docker Desktop** (Windows/macOS) or **Docker Engine** (Linux)
+- **Docker Compose**
 
-## Setup
+### How to Install Docker
+- **Windows:** Download and install from [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/).
+- **macOS:** Download and install from [Docker Desktop for Mac](https://docs.docker.com/desktop/install/mac-install/).
+- **Linux:** Follow the instructions for your distribution at [Docker Engine for Linux](https://docs.docker.com/engine/install/).
+
+*(Note: The project uses a cloud-hosted PostgreSQL database, so a local PostgreSQL installation is no longer required for Docker development.)*
+
+## Setup (Docker - Recommended)
+
+The Clax Backend is fully dockerized. You do **not** need to manually install Python, FastAPI, Uvicorn, or run `pip install` locally.
 
 ### 1. Clone the repository
 
@@ -47,56 +54,45 @@ git clone https://github.com/ummara-clax/ALFRED.git
 cd ALFRED
 ```
 
-### 2. Create a virtual environment
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Configure environment variables
+### 2. Configure environment variables
 
 ```bash
 cp .env.example .env
 ```
+Edit `.env` and configure your cloud `DATABASE_URL` (and `NEON_DATABASE_URL`) along with other required secrets.
 
-Edit `.env` and set the required values:
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `JWT_SECRET` | Yes | Random string for signing JWT tokens |
-| `OPENCLAW_GATEWAY_TOKEN` | Yes | Must match the value in `openclaw.json` |
-| `NEON_DATABASE_URL` | Yes | PostgreSQL connection string (`postgresql+psycopg2://...`) |
-| `DATABASE_URL` | Yes | PostgreSQL connection string for Redis-Gateway |
-| `AWS_ACCESS_KEY_ID` | Yes | AWS credentials for S3 cloud storage |
-| `AWS_SECRET_ACCESS_KEY` | Yes | AWS credentials for S3 cloud storage |
-
-Optional variables have sensible defaults in `.env.example`.
-
-### 5. Run database migrations (optional)
+### 3. Build and start the project
 
 ```bash
-export NEON_DATABASE_URL="your_connection_string"
-cd alfred-openclaw
-python scripts/run_migration.py
-python scripts/run_sanctions_migration.py
+docker compose up --build
 ```
+This will automatically:
+- Build the Python 3.13 image.
+- Install all dependencies from `requirements.txt`.
+- Start the Redis cache.
+- Start the FastAPI backend on `http://localhost:8000`.
+- Start the background reconciliation worker.
 
-### 6. Start the application
+### 4. Stopping the containers
 
-From the `alfred-openclaw/` directory:
-
+To stop the running services, use `Ctrl+C` in the terminal where it's running, or run:
 ```bash
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+docker compose down
 ```
 
-The API will be available at `http://localhost:8000`.
+### 5. Rebuilding containers after dependency changes
+
+If you add new libraries to `requirements.txt`, you must rebuild the image:
+```bash
+docker compose up --build
+```
+
+### Troubleshooting
+- **Port 8000 / 6379 is already in use:** Ensure no local instances of Uvicorn or Redis are running on your host machine.
+- **Database Connection Errors:** Verify that your `DATABASE_URL` in `.env` points to a valid cloud PostgreSQL instance.
+- **Platform-specific Notes:** Windows users running WSL2 should ensure Docker Desktop is configured to use the WSL2 backend for better performance.
+
+## Manual Setup (Without Docker)
 
 ## Module Overview
 
@@ -119,3 +115,6 @@ Core backend infrastructure shared across all agents. Includes the FastAPI gatew
 | `Optimal-Entry-Price` | Identifies optimal entry points for trades using ML-driven signals. |
 | `Portfolio-Rebalancing` | Automates portfolio rebalancing based on target allocations and market conditions. |
 | `Top-10-monthly-picks` | Generates a ranked list of the top 10 investment picks each month. |
+
+## Task: Dockerize the Project
+**Update:** Created a Dockerfile for the core API service and a docker-compose.yml to seamlessly orchestrate the API, Redis cache, and background reconciliation worker using .env injections.
