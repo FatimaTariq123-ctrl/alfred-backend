@@ -120,5 +120,3 @@ Core backend infrastructure shared across all agents. Includes the FastAPI gatew
 | `Portfolio-Rebalancing` | Automates portfolio rebalancing based on target allocations and market conditions. |
 | `Top-10-monthly-picks` | Generates a ranked list of the top 10 investment picks each month. |
 
-## Task: Externalize OpenClaw Agent Thresholds and Prompts
-**Update:** Moved hardcoded operational values—such as DUPLICATE_TRADE_WINDOW_SECONDS, AGENT_TEMPERATURE, and system prompts—into the central application configuration, allowing them to be adjusted dynamically per environment without requiring code changes.
