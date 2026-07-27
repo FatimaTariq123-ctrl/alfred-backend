@@ -60,7 +60,7 @@
     "profile": "coding",
     "web": {
       "search": {
-        "provider": "brave"
+        "provider": "web"
       }
     }
   },
@@ -154,3 +154,4 @@
     }
   }
 }
+
