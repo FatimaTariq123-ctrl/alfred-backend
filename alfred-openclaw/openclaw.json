@@ -40,7 +40,7 @@
   },
   "agents": {
     "defaults": {
-      "workspace": "~/Alfred/alfred-openclaw/workspace",
+      "workspace": "/home/node/.openclaw/workspace",
       "model": {
         "primary": "google/gemini-3.1-pro-preview",
         "fallbacks": [

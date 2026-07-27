@@ -30,4 +30,4 @@ with open('/home/node/.openclaw/openclaw.json', 'w') as f:
   ) &
 fi
 
-exec tini -s -- node openclaw.mjs gateway
+exec tini -s -- node dist/index.js gateway --bind lan --port 18789
