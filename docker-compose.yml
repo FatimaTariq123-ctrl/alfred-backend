@@ -1,4 +1,8 @@
 
+networks:
+  alfred-network:
+    driver: bridge
+
 services:
   alfred-api:
     build: 
@@ -9,10 +13,14 @@ services:
     env_file:
       - .env
     depends_on:
-      - redis
-      - openclaw-gateway
+      redis:
+        condition: service_started
+      openclaw-gateway:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - alfred-network
 
   openclaw-gateway:
     build:
@@ -24,11 +32,21 @@ services:
       - .env
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:18789/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - alfred-network
 
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
+    networks:
+      - alfred-network
 
   reconciliation-worker:
     build:
@@ -38,7 +56,11 @@ services:
     env_file:
       - .env
     depends_on:
-      - redis
-      - openclaw-gateway
+      redis:
+        condition: service_started
+      openclaw-gateway:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - alfred-network
