@@ -67,12 +67,13 @@ Edit `.env` and configure your cloud `DATABASE_URL` (and `NEON_DATABASE_URL`) al
 ```bash
 docker compose up --build
 ```
-This will automatically:
-- Build the Python image.
-- Install all dependencies from `requirements.txt`.
-- Start the Redis cache.
-- Start the FastAPI backend on `http://localhost:8000`.
-- Start the background reconciliation worker.
+This single command automatically builds and orchestrates all necessary containers:
+- **Builds the Standard API Image (`Dockerfile`)**: Used by the FastAPI backend and reconciliation worker, installing dependencies from `requirements.txt`.
+- **Builds the OpenClaw Gateway Image (`Dockerfile.openclaw`)**: Preserves customized OpenClaw runtime files.
+- **Starts Redis**: Spins up the cache instance on port 6379.
+- **Starts OpenClaw Gateway**: Available internally and locally on port 18789.
+- **Starts FastAPI Backend**: Available on `http://localhost:8000`.
+- **Starts Reconciliation Worker**: Runs the background reconciliation process.
 
 ### 4. Stopping the containers
 
