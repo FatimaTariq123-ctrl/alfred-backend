@@ -6,7 +6,7 @@
     },
     "mode": "local",
     "port": 18789,
-    "bind": "loopback",
+    "bind": "lan",
     "tailscale": {
       "mode": "off",
       "resetOnExit": false
@@ -57,12 +57,7 @@
     "dmScope": "per-channel-peer"
   },
   "tools": {
-    "profile": "coding",
-    "web": {
-      "search": {
-        "provider": "web"
-      }
-    }
+    "profile": "coding"
   },
   "mcp": {
     "servers": {

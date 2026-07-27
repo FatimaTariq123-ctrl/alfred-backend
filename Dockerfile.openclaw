@@ -14,10 +14,14 @@ COPY alfred-openclaw/workspace/ /home/node/.openclaw/workspace/
 # Ensure proper permissions
 RUN chown -R node:node /home/node/.openclaw
 
+# Copy custom entrypoint script
+COPY alfred-openclaw/entrypoint.sh /home/node/.openclaw/entrypoint.sh
+RUN chmod +x /home/node/.openclaw/entrypoint.sh
+
 # Drop back to the non-privileged user for security
 USER node
 
 # Expose the Gateway port
 EXPOSE 18789
 
-# Explicitly start the gateway bound to 0.0.0.0
+ENTRYPOINT ["/home/node/.openclaw/entrypoint.sh"]
