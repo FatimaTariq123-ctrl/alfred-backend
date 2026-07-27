@@ -11,6 +11,16 @@ services:
       - .env
     depends_on:
       - redis
+      - openclaw-gateway
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  openclaw-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+    ports:
+      - "18789:18789"
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -28,5 +38,6 @@ services:
       - .env
     depends_on:
       - redis
+      - openclaw-gateway
     extra_hosts:
       - "host.docker.internal:host-gateway"
