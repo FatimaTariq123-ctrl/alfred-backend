@@ -20,7 +20,7 @@ logger = logging.getLogger("d5_reconciliation_worker")
 
 # 3. Database Connection Pooling (Matches A2 constraints)
 # pool_size=10, max_overflow=20 prevents session starvation
-db_url = os.environ.get("DATABASE_URL") or os.environ.get("NEON_DATABASE_URL")
+db_url = os.environ.get("NEON_DATABASE_URL") or os.environ.get("DATABASE_URL")
 if db_url and db_url.startswith("postgresql+psycopg2://"):
     db_url = db_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
 elif db_url and db_url.startswith("postgresql://"):

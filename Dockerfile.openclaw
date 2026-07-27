@@ -21,4 +21,3 @@ USER node
 EXPOSE 18789
 
 # Explicitly start the gateway bound to 0.0.0.0
-CMD ["openclaw", "gateway", "start", "--host", "0.0.0.0", "--port", "18789"]
