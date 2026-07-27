@@ -2,6 +2,7 @@ import asyncio
 import os
 import sys
 import logging
+import re
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
@@ -25,6 +26,13 @@ if db_url and db_url.startswith("postgresql+psycopg2://"):
     db_url = db_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
 elif db_url and db_url.startswith("postgresql://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
+
+# asyncpg does not accept libpq-style sslmode or channel_binding query params.
+# Convert sslmode=require -> ssl=require, strip channel_binding and any other
+# unrecognized params, so they are not forwarded as kwargs to asyncpg.connect().
+if db_url:
+    db_url = re.sub(r'sslmode=require', 'ssl=require', db_url)
+    db_url = re.sub(r'&?channel_binding=[^&]+', '', db_url)
 
 engine = create_async_engine(
     db_url, 
