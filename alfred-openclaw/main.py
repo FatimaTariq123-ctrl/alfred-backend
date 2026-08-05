@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 import onnxruntime as ort
 
 from app.api.endpoints.routes import (
+    onboarding_router,
     auth_router, chat_router, orders_router, compliance_router, 
     sanctions_router, trade_status_router, trade_prevention_router,
     market_router
@@ -87,6 +88,7 @@ async def health_check():
     return {"status": "ok", "service": "gateway"}
 
 # Include routers
+app.include_router(onboarding_router, prefix="/api/v1/onboarding", tags=["Onboarding"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(chat_router, prefix="/api/v1", tags=["Chat"])
 app.include_router(orders_router, prefix="/api/v1", tags=["Conditional Orders"])
