@@ -13,7 +13,7 @@ import onnxruntime as ort
 from app.api.endpoints.routes import (
     auth_router, chat_router, orders_router, compliance_router, 
     sanctions_router, trade_status_router, trade_prevention_router,
-    market_router
+    market_router, portfolio_router
 )
 from app.backend_services.openclaw_gateway import GatewayClient
 from app.backend_services.pii_middleware.pii_masking import PIIMaskingMiddleware
@@ -95,6 +95,7 @@ app.include_router(sanctions_router, prefix="/api/v1", tags=["Sanctions"])
 app.include_router(trade_status_router, prefix="/api/v1", tags=["Trade Status"])
 app.include_router(trade_prevention_router, prefix="/api/v1", tags=["Trade Prevention"])
 app.include_router(market_router, tags=["Market"])
+app.include_router(portfolio_router, prefix="/api/v1", tags=["Portfolio & Autopilot"])
 
 
 # --- Task 6: SSE Streaming Endpoint ---
