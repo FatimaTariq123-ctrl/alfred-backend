@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 import onnxruntime as ort
 
 from app.api.endpoints.routes.fie_routes import router as fie_router
+from app.api.endpoints.routes.stock_alfred_routes import router as stock_alfred_router
 from app.api.endpoints.routes import (
     auth_router, chat_router, orders_router, compliance_router, 
     sanctions_router, trade_status_router, trade_prevention_router,
@@ -99,6 +100,7 @@ app.include_router(trade_prevention_router, prefix="/api/v1", tags=["Trade Preve
 app.include_router(market_router, tags=["Market"])
 app.include_router(user_router, prefix="/api/v1", tags=["Profile & settings"])
 app.include_router(settings_router, prefix="/api/v1", tags=["Profile & settings"])
+app.include_router(stock_alfred_router, prefix="/api/v1")
 
 
 # --- Task 6: SSE Streaming Endpoint ---
