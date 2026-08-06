@@ -10,6 +10,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import onnxruntime as ort
 
+from app.api.endpoints.routes.stock_alfred_routes import router as stock_alfred_router
+from app.api.endpoints.routes.fie_routes import router as fie_router
 from app.api.endpoints.routes import (
     auth_router, chat_router, orders_router, compliance_router, 
     sanctions_router, trade_status_router, trade_prevention_router,
@@ -88,6 +90,7 @@ async def health_check():
 
 # Include routers
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(fie_router, prefix="/api/v1/fie", tags=["FIE Onboarding"])
 app.include_router(chat_router, prefix="/api/v1", tags=["Chat"])
 app.include_router(orders_router, prefix="/api/v1", tags=["Conditional Orders"])
 app.include_router(compliance_router, prefix="/api/v1", tags=["Compliance"])
@@ -95,6 +98,7 @@ app.include_router(sanctions_router, prefix="/api/v1", tags=["Sanctions"])
 app.include_router(trade_status_router, prefix="/api/v1", tags=["Trade Status"])
 app.include_router(trade_prevention_router, prefix="/api/v1", tags=["Trade Prevention"])
 app.include_router(market_router, tags=["Market"])
+app.include_router(stock_alfred_router)
 
 
 # --- Task 6: SSE Streaming Endpoint ---
