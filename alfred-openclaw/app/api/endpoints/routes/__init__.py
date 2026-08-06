@@ -6,3 +6,5 @@ from .sanctions import sanctions_router
 from .trade_status import trade_status_router
 from .trade_prevention import trade_prevention_router
 from .market_routes import router as market_router
+from .user_routes import user_router
+from .settings_routes import settings_router
