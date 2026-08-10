@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 import onnxruntime as ort
 
 from app.api.endpoints.routes import (
+    onboarding_router,
     auth_router, chat_router, orders_router, compliance_router, 
     sanctions_router, trade_status_router, trade_prevention_router,
     market_router
