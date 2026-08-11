@@ -13,6 +13,7 @@ import onnxruntime as ort
 from app.api.endpoints.routes.stock_alfred_routes import router as stock_alfred_router
 from app.api.endpoints.routes.fie_routes import router as fie_router
 from app.api.endpoints.routes.stock_alfred_routes import router as stock_alfred_router
+from app.api.endpoints.routes.wallet_routes import router as wallet_router
 from app.api.endpoints.routes.notifications_routes import router as notifications_router
 from app.api.endpoints.routes import (
     onboarding_router,
@@ -106,6 +107,7 @@ app.include_router(portfolio_router, prefix="/api/v1", tags=["Portfolio & Autopi
 app.include_router(user_router, prefix="/api/v1", tags=["Profile & settings"])
 app.include_router(settings_router, prefix="/api/v1", tags=["Profile & settings"])
 app.include_router(stock_alfred_router, prefix="/api/v1")
+app.include_router(wallet_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
 
 
