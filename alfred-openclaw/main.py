@@ -13,6 +13,7 @@ import onnxruntime as ort
 from app.api.endpoints.routes.fie_routes import router as fie_router
 from app.api.endpoints.routes.stock_alfred_routes import router as stock_alfred_router
 from app.api.endpoints.routes import (
+    onboarding_router,
     auth_router, chat_router, orders_router, compliance_router, 
     sanctions_router, trade_status_router, trade_prevention_router,
     market_router, user_router, settings_router
