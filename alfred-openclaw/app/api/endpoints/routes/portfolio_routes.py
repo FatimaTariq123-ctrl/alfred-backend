@@ -96,6 +96,39 @@ async def get_portfolio_allocation(category: Optional[str] = Query("overview", d
             }
         }
 
+@portfolio_router.get("/portfolio/holdings")
+async def get_portfolio_holdings():
+    return {
+        "success": True,
+        "data": {
+            "total_value": "65000.00",
+            "holdings": [
+                {
+                    "symbol": "NFLX",
+                    "name": "Netflix, Inc",
+                    "asset_class": "us_stock",
+                    "quantity": "25.0",
+                    "avg_price": "350.00",
+                    "current_price": "364.00",
+                    "current_value": "9100.00",
+                    "pnl_absolute": "350.00",
+                    "pnl_percent": "4.0"
+                },
+                {
+                    "symbol": "BTCUSD",
+                    "name": "Bitcoin",
+                    "asset_class": "crypto",
+                    "quantity": "0.1",
+                    "avg_price": "60000.00",
+                    "current_price": "71500.00",
+                    "current_value": "7150.00",
+                    "pnl_absolute": "1150.00",
+                    "pnl_percent": "19.1"
+                }
+            ]
+        }
+    }
+
 @portfolio_router.get("/portfolio/goal")
 async def get_portfolio_goal():
     return {
