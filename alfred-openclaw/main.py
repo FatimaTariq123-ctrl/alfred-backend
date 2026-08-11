@@ -10,9 +10,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import onnxruntime as ort
 
+from app.api.endpoints.routes.stock_alfred_routes import router as stock_alfred_router
+from app.api.endpoints.routes.fie_routes import router as fie_router
+from app.api.endpoints.routes.stock_alfred_routes import router as stock_alfred_router
+from app.api.endpoints.routes.notifications_routes import router as notifications_router
 from app.api.endpoints.routes import (
+    onboarding_router,
     auth_router, chat_router, orders_router, compliance_router, 
-    sanctions_router, trade_status_router, trade_prevention_router, market_router
+    sanctions_router, trade_status_router, trade_prevention_router,
+    market_router, portfolio_router, user_router, settings_router
 )
 from app.backend_services.openclaw_gateway import GatewayClient
 from app.backend_services.pii_middleware.pii_masking import PIIMaskingMiddleware
@@ -86,14 +92,21 @@ async def health_check():
     return {"status": "ok", "service": "gateway"}
 
 # Include routers
+app.include_router(onboarding_router, prefix="/api/v1/onboarding", tags=["Onboarding"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
-app.include_router(chat_router, prefix="/api/v1", tags=["Chat"])
+app.include_router(fie_router, prefix="/api/v1/fie", tags=["FIE Onboarding"])
+app.include_router(chat_router, prefix="/api/v1", tags=["Chat & Assistant"])
 app.include_router(orders_router, prefix="/api/v1", tags=["Conditional Orders"])
 app.include_router(compliance_router, prefix="/api/v1", tags=["Compliance"])
 app.include_router(sanctions_router, prefix="/api/v1", tags=["Sanctions"])
 app.include_router(trade_status_router, prefix="/api/v1", tags=["Trade Status"])
 app.include_router(trade_prevention_router, prefix="/api/v1", tags=["Trade Prevention"])
-app.include_router(market_router, prefix="/api/v1", tags=["Markets"])
+app.include_router(market_router, tags=["Market"])
+app.include_router(portfolio_router, prefix="/api/v1", tags=["Portfolio & Autopilot"])
+app.include_router(user_router, prefix="/api/v1", tags=["Profile & settings"])
+app.include_router(settings_router, prefix="/api/v1", tags=["Profile & settings"])
+app.include_router(stock_alfred_router, prefix="/api/v1")
+app.include_router(notifications_router, prefix="/api/v1")
 
 
 # --- Task 6: SSE Streaming Endpoint ---
