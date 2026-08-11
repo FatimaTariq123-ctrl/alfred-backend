@@ -91,6 +91,7 @@ async def health_check():
     return {"status": "ok", "service": "gateway"}
 
 # Include routers
+app.include_router(onboarding_router, prefix="/api/v1/onboarding", tags=["Onboarding"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(fie_router, prefix="/api/v1/fie", tags=["FIE Onboarding"])
 app.include_router(chat_router, prefix="/api/v1", tags=["Chat & Assistant"])

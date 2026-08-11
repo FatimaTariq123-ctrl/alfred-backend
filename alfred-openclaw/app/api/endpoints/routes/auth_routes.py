@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 auth_router = APIRouter()
+onboarding_router = APIRouter()
 
 class EmailCheckResponse(BaseModel): success: bool; data: dict
 class InitiateRequest(BaseModel): email: str; full_name: str = None; device_id: str
@@ -61,3 +62,10 @@ async def refresh_token(request: RefreshRequest):
 async def logout(request: LogoutRequest):
     return {"success": True, "data": {"logged_out": True}}
 
+@onboarding_router.get("/questions")
+async def get_questions():
+    return {"success": True, "data": {"questions": [{"id": "q_risk", "prompt": "How would you describe your investing style?", "options": ["Cautious Saver", "Steady Grower", "Ambitious Builder"]}]}}
+
+@onboarding_router.post("/answers")
+async def post_answers(answers: dict):
+    return {"success": True, "data": {"investor_archetype": "Ambitious Builder", "onboarding_complete": True}}

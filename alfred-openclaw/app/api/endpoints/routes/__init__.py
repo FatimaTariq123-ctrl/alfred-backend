@@ -1,5 +1,4 @@
-from .auth_routes import auth_router
-from .onboarding_routes import onboarding_router
+from .auth_routes import auth_router, onboarding_router
 from .chat import chat_router
 from .orders import orders_router
 from .compliance import compliance_router
