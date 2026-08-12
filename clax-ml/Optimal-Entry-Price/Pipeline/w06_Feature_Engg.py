@@ -167,6 +167,17 @@ def save_features(df: pd.DataFrame, out_path="outputs/06_final_features.csv"):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     df.to_csv(out_path, index=False)
     logging.info(f"✅ Saved final OEP features → {out_path} | Shape: {df.shape}")
+    
+    # Write curated features to Postgres as per architectural requirements
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+        from shared_db import save_to_db
+        logging.info("Writing curated OEP features to PostgreSQL database (clax_oep_features)...")
+        save_to_db(df, "clax_oep_features")
+        logging.info("✅ Successfully synced OEP features to PostgreSQL.")
+    except Exception as e:
+        logging.warning(f"Failed to sync OEP features to PostgreSQL: {e}")
 
 
 # ======================================================
