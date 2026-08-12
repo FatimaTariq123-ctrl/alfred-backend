@@ -257,8 +257,70 @@ async def get_stock_chart(ticker: str, range: str = "1D"):
         ]
     }
 
-# Idempotency store (in-memory for demo)
-idempotency_store: Dict[str, Any] = {}
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
+_redis_client = None
+
+def _get_redis():
+    global _redis_client
+    if _redis_client is not None:
+        return _redis_client
+    try:
+        import redis as _redis
+        redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+        _redis_client = _redis.Redis.from_url(redis_url, decode_responses=True)
+        return _redis_client
+    except Exception:
+        logger.warning("Redis unavailable — Idempotency will fall back to local dict")
+        return None
+
+# Fallback idempotency store for local dev
+fallback_idempotency_store: Dict[str, Any] = {}
+
+def get_idempotent_result(user_id: str, idempotency_key: str):
+    redis_client = _get_redis()
+    if redis_client:
+        key = f"idempotency:{user_id}:{idempotency_key}"
+        val = redis_client.get(key)
+        if val == "PROCESSING":
+            raise HTTPException(status_code=409, detail="This request is already being worked on.")
+        elif val:
+            return json.loads(val)
+        return None
+    else:
+        key = f"{user_id}:{idempotency_key}"
+        val = fallback_idempotency_store.get(key)
+        if val == "PROCESSING":
+            raise HTTPException(status_code=409, detail="This request is already being worked on.")
+        elif val:
+            return val
+        return None
+
+def set_idempotent_processing(user_id: str, idempotency_key: str):
+    redis_client = _get_redis()
+    if redis_client:
+        key = f"idempotency:{user_id}:{idempotency_key}"
+        # Atomic SET NX EX 86400
+        acquired = redis_client.set(key, "PROCESSING", nx=True, ex=86400)
+        if not acquired:
+            raise HTTPException(status_code=409, detail="This request is already being worked on.")
+    else:
+        key = f"{user_id}:{idempotency_key}"
+        if key in fallback_idempotency_store:
+            raise HTTPException(status_code=409, detail="This request is already being worked on.")
+        fallback_idempotency_store[key] = "PROCESSING"
+
+def set_idempotent_result(user_id: str, idempotency_key: str, result: dict):
+    redis_client = _get_redis()
+    if redis_client:
+        key = f"idempotency:{user_id}:{idempotency_key}"
+        redis_client.set(key, json.dumps(result), ex=86400)
+    else:
+        key = f"{user_id}:{idempotency_key}"
+        fallback_idempotency_store[key] = result
 
 @router.post("/api/v1/stocks/{ticker}/buy/review", tags=["Market"])
 async def buy_review(ticker: str, req: BuyReviewRequest):
@@ -276,26 +338,38 @@ async def buy_review(ticker: str, req: BuyReviewRequest):
     }
 
 @router.post("/api/v1/stocks/{ticker}/buy", tags=["Market"])
-async def buy_stock(ticker: str, req: BuyRequest, idempotency_key: str = Header(None, alias="Idempotency-Key")):
+async def buy_stock(
+    ticker: str, 
+    req: BuyRequest, 
+    idempotency_key: str = Header(None, alias="Idempotency-Key"),
+    user_id: str = Depends(get_current_user)
+):
     if not idempotency_key:
         raise HTTPException(status_code=400, detail="Idempotency-Key header is required")
         
-    if idempotency_key in idempotency_store:
-        return idempotency_store[idempotency_key]
+    cached_result = get_idempotent_result(user_id, idempotency_key)
+    if cached_result:
+        return cached_result
         
-    res = {
-        "order_id": f"ord_{uuid.uuid4().hex[:8]}",
-        "status": "completed",
-        "order_type": "Market buy ($)",
-        "order_amount": 5.00,
-        "avg_price_per_share": 80.00,
-        "shares": 0.05925,
-        "transaction_fees": 0.00,
-        "one_time_tip": 0.06,
-        "total_cost": 5.06
-    }
-    idempotency_store[idempotency_key] = res
-    return res
+    set_idempotent_processing(user_id, idempotency_key)
+    
+    try:
+        res = {
+            "order_id": f"ord_{uuid.uuid4().hex[:8]}",
+            "status": "completed",
+            "order_type": "Market buy ($)",
+            "order_amount": 5.00,
+            "avg_price_per_share": 80.00,
+            "shares": 0.05925,
+            "transaction_fees": 0.00,
+            "one_time_tip": 0.06,
+            "total_cost": 5.06
+        }
+        set_idempotent_result(user_id, idempotency_key, res)
+        return res
+    except Exception as e:
+        # In a real app, we might clear the PROCESSING state on failure if we want them to retry
+        raise
 
 @router.post("/api/v1/stocks/{ticker}/sell/review", tags=["Market"])
 async def sell_review(ticker: str, req: SellReviewRequest):
@@ -318,26 +392,37 @@ async def sell_review(ticker: str, req: SellReviewRequest):
     }
 
 @router.post("/api/v1/stocks/{ticker}/sell", tags=["Market"])
-async def sell_stock(ticker: str, req: SellRequest, idempotency_key: str = Header(None, alias="Idempotency-Key")):
+async def sell_stock(
+    ticker: str, 
+    req: SellRequest, 
+    idempotency_key: str = Header(None, alias="Idempotency-Key"),
+    user_id: str = Depends(get_current_user)
+):
     if not idempotency_key:
         raise HTTPException(status_code=400, detail="Idempotency-Key header is required")
         
-    if idempotency_key in idempotency_store:
-        return idempotency_store[idempotency_key]
+    cached_result = get_idempotent_result(user_id, idempotency_key)
+    if cached_result:
+        return cached_result
         
-    res = {
-        "order_id": f"ord_{uuid.uuid4().hex[:8]}",
-        "status": "completed",
-        "order_type": "Market sell ($)",
-        "order_amount": 5.00,
-        "avg_price_per_share": 84.66,
-        "quantity": 0.05925,
-        "transaction_fees": -0.00,
-        "regulatory_fee": -0.02,
-        "total_sale_proceeds": 4.98
-    }
-    idempotency_store[idempotency_key] = res
-    return res
+    set_idempotent_processing(user_id, idempotency_key)
+    
+    try:
+        res = {
+            "order_id": f"ord_{uuid.uuid4().hex[:8]}",
+            "status": "completed",
+            "order_type": "Market sell ($)",
+            "order_amount": 5.00,
+            "avg_price_per_share": 84.66,
+            "quantity": 0.05925,
+            "transaction_fees": -0.00,
+            "regulatory_fee": -0.02,
+            "total_sale_proceeds": 4.98
+        }
+        set_idempotent_result(user_id, idempotency_key, res)
+        return res
+    except Exception as e:
+        raise
 
 # WebSockets
 @router.websocket("/ws/v1/quotes")

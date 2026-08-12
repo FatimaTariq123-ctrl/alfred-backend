@@ -13,35 +13,30 @@ import Pipeline.w06_Feature_Engg as fe
 # Setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-_merged_data_cache = None
-
 def get_merged_data():
     """
-    Loads and caches the merged historical data.
+    Loads the merged historical data.
     """
-    global _merged_data_cache
-    if _merged_data_cache is None:
-        logging.info("Loading and caching historical data...")
-        try:
-            stock_data = pd.read_csv("outputs/02_Yahoo_Stocks.csv", parse_dates=["date"])
-            stock_data.rename(columns={'date': 'Date'}, inplace=True)
-            macro_data = pd.read_csv("outputs/03_fred_features.csv", parse_dates=["Date"])
-            
-            merged_data = pd.merge(stock_data, macro_data, on="Date", how="left")
-            merged_data.sort_values(by=["Ticker", "Date"], inplace=True)
-            
-            # Group by ticker and forward-fill, then back-fill
-            merged_data = merged_data.groupby('Ticker').apply(lambda group: group.ffill().bfill()).reset_index(drop=True)
-            
-            _merged_data_cache = merged_data
-            logging.info("Historical stock and macro data loaded and cached.")
-        except FileNotFoundError as e:
-            logging.error(f"Failed to load historical data from CSV: {e}. Make sure 'outputs/02_Yahoo_Stocks.csv' and 'outputs/03_fred_features.csv' exist.")
-            raise
-        except Exception as e:
-            logging.error(f"An error occurred while loading or processing historical data: {e}")
-            raise
-    return _merged_data_cache
+    logging.info("Loading historical data...")
+    try:
+        stock_data = pd.read_csv("outputs/02_Yahoo_Stocks.csv", parse_dates=["date"])
+        stock_data.rename(columns={'date': 'Date'}, inplace=True)
+        macro_data = pd.read_csv("outputs/03_fred_features.csv", parse_dates=["Date"])
+        
+        merged_data = pd.merge(stock_data, macro_data, on="Date", how="left")
+        merged_data.sort_values(by=["Ticker", "Date"], inplace=True)
+        
+        # Group by ticker and forward-fill, then back-fill
+        merged_data = merged_data.groupby('Ticker').apply(lambda group: group.ffill().bfill()).reset_index(drop=True)
+        
+        logging.info("Historical stock and macro data loaded.")
+        return merged_data
+    except FileNotFoundError as e:
+        logging.error(f"Failed to load historical data from CSV: {e}. Make sure 'outputs/02_Yahoo_Stocks.csv' and 'outputs/03_fred_features.csv' exist.")
+        raise
+    except Exception as e:
+        logging.error(f"An error occurred while loading or processing historical data: {e}")
+        raise
 
 class PredictionService:
     def __init__(self, model_path="models/oep_regressor.onnx", scaler_x_path="models/scaler_X.pkl", scaler_y_path="models/scaler_y.pkl", pca_path="outputs/pca_model.joblib"):
