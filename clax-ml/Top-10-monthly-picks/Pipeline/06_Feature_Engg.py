@@ -133,8 +133,20 @@ def transform_pca(data: pd.DataFrame, suffix="_ecod", load_path="outputs/pca_mod
 # ---------------- Saving ---------------- #
 def save_features(data: pd.DataFrame, out_path="outputs/06_final_features.csv"):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    data.reset_index().to_csv(out_path, index=False)
+    reset_data = data.reset_index()
+    reset_data.to_csv(out_path, index=False)
     logging.info(f"✅ Final features saved to {out_path} | Shape: {data.shape}")
+
+    # Write curated features to Postgres as per architectural requirements
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+        from shared_db import save_to_db
+        logging.info("Writing curated Top-10 features to PostgreSQL database (clax_top10_features)...")
+        save_to_db(reset_data, "clax_top10_features")
+        logging.info("✅ Successfully synced Top-10 features to PostgreSQL.")
+    except Exception as e:
+        logging.warning(f"Failed to sync Top-10 features to PostgreSQL: {e}")
 
 
 # ---------------- Main Pipeline ---------------- #

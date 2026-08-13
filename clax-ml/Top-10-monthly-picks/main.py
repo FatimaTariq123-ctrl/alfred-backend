@@ -53,19 +53,12 @@ OPENAPI_TAGS = [
     {"name": "Monitoring", "description": "Health and service status endpoints."},
 ]
 
-# This dictionary will hold our loaded model and other ML assets
-ml_models = {}
-icon_url_cache: Dict[str, str] = {}
-
-
 def _normalize_ticker(ticker: str) -> str:
     return ticker.strip().upper()
 
 
 def _build_logo_url(ticker: str) -> str:
     normalized_ticker = _normalize_ticker(ticker)
-    if normalized_ticker in icon_url_cache:
-        return icon_url_cache[normalized_ticker]
 
     fallback_url = f"https://images.financialmodelingprep.com/symbol/{normalized_ticker}.png"
     if not FMP_API_KEY:
@@ -82,7 +75,6 @@ def _build_logo_url(ticker: str) -> str:
         if isinstance(payload, list) and payload:
             image_url = payload[0].get("image")
             if image_url:
-                icon_url_cache[normalized_ticker] = image_url
                 return image_url
     except Exception as e:
         logging.warning(f"FMP icon fetch failed for {normalized_ticker}: {e}")
@@ -137,25 +129,9 @@ def _ticker_name(ticker: str) -> str:
 # ----------------- FastAPI App Lifespan ----------------- #
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load the ML model and scaler on startup
-    logging.info("Loading machine learning model and assets...")
-    try:
-        model = ort.InferenceSession(MODEL_PATH, providers=["CPUExecutionProvider"])
-        ml_models['model'] = model
-        ml_models['scaler'] = joblib.load(SCALER_PATH)
-        logging.info("Model and assets loaded successfully.")
-    except FileNotFoundError as e:
-        logging.error(f"Could not load ML model or assets: {e}. The /predict/top10 endpoint will be unavailable.")
-        ml_models['model'] = None
-        ml_models['scaler'] = None
-    except ValueError as e:
-        logging.error(f"Model validation failed: {e}")
-        ml_models['model'] = None
-        ml_models['scaler'] = None
+    logging.info("Starting up API...")
     yield
-    # Clean up the ML models and other resources on shutdown
-    ml_models.clear()
-    logging.info("ML models and assets cleared.")
+    logging.info("Shutting down API...")
 
 app = FastAPI(lifespan=lifespan, openapi_tags=OPENAPI_TAGS)
 
