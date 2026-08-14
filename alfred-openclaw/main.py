@@ -64,28 +64,13 @@ app = FastAPI(
 )
 
 # Add PII Masking Middleware to the AI request flow
+from app.middleware.idempotency import IdempotencyMiddleware
+
+app.add_middleware(IdempotencyMiddleware)
 app.add_middleware(PIIMaskingMiddleware)
 
-# --- Task 2-3: Redis-backed Idempotency Middleware ---
+# --- Task 2-3: Redis Client (re-used by other features) ---
 redis_client = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
-
-@app.middleware("http")
-async def idempotency_middleware(request: Request, call_next):
-    if request.method in ["POST", "PUT"]:
-        idempotency_key = request.headers.get("X-Idempotency-Key")
-        if idempotency_key:
-            user_id = "temp_user"  # In reality pulled from auth
-            lock_key = f"idempotency:{user_id}:{idempotency_key}"
-            
-            # Atomic lock in Redis (SET NX EX)
-            lock_acquired = await redis_client.set(lock_key, "PROCESSING", nx=True, ex=86400)
-            if not lock_acquired:
-                return HTTPException(
-                    status_code=409, 
-                    detail="This request is already being worked on, do not spin up a duplicate execution."
-                )
-    return await call_next(request)
-
 
 # Health endpoint
 @app.get("/health")
