@@ -3,6 +3,7 @@ import logging
 
 # Import Auth router (JWT task)
 from app.api.endpoints.routes import auth
+from app.api.endpoints.routes.wallet_routes import router as wallet_router
 
 # Import PII Middleware (PII task)
 from app.middleware.pii_masking import PIIMaskingMiddleware
@@ -25,6 +26,7 @@ async def health_check():
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(wallet_router, prefix="/api/v1", tags=["Wallet"])
 # app.include_router(orders.router, prefix="/api/v1/orders", tags=["Orders"]) # Assuming orders router exists elsewhere
 
 @app.on_event("startup")
