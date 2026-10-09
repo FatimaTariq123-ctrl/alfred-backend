@@ -106,7 +106,7 @@ def verify_tickers_with_alpaca(tickers: List[str]) -> List[str]:
     return verified
 
 
-def _save_tickers_to_csv(tickers: List[str], filename: str = "outputs/01_SP500_Tickers_list.csv") -> None:
+def _save_tickers_to_csv(tickers: List[str], filename: str = "../shared_data/01_SP500_Tickers_list.csv") -> None:
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     pd.DataFrame(tickers, columns=["Symbol"]).to_csv(filename, index=False)
     logger.info("Saved tickers list to %s", filename)
@@ -115,30 +115,31 @@ def _save_tickers_to_csv(tickers: List[str], filename: str = "outputs/01_SP500_T
 # ------------------ Membership Matrix ------------------ #
 def build_membership_matrix(
     tickers: List[str],
-    filename: str = "outputs/01_SP500_membership_matrix.csv",
+    filename: str = "../shared_data/01_SP500_membership_matrix.csv",
     churn_rate: float = 0.02
 ) -> pd.DataFrame:
     """
-    Build or extend a membership matrix.
-    Simulates churn by randomly dropping some tickers each run.
+    Build or extend a membership matrix from the verified, currently-tradable S&P 500 ticker list.
     """
     logger.info("--- Building Membership Matrix ---")
     # Default: all tradable = 1
     membership_status = {t: 1 for t in tickers}
 
-    # Simulate churn only when we have tickers
-    dropped: List[str] = []
+    # membership_status already reflects real S&P 500 membership: fetch_sp500_tickers() only
+    # returns tickers that are (a) currently listed on Wikipedia's S&P 500 page and (b) verified
+    # tradable via Alpaca. There is no real churn signal to apply on top of that -- a ticker is
+    # only ever dropped from the index for real reasons (removal from the S&P 500, Alpaca no
+    # longer considers it tradable), both of which fetch_sp500_tickers() already enforces. The
+    # random drop that used to run here had no connection to any real-world event: it could (and
+    # did) randomly mark a genuine constituent -- e.g. CF Industries -- as "not a member" on an
+    # otherwise ordinary day, which fed through apply_membership() in w04_Labels.py and silently
+    # dropped that ticker from every downstream feature table for that day.
     if tickers:
-        logger.info("Simulating churn with a rate of %.2f...", churn_rate)
-        num_churn = max(1, int(len(tickers) * churn_rate))
-        dropped = random.sample(tickers, num_churn)
-        for d in dropped:
-            membership_status[d] = 0
-        logger.info("Simulated churn: %d tickers dropped today.", len(dropped))
+        logger.info("Membership set from verified tickers: %d member(s), no simulated churn applied.", len(tickers))
     else:
         logger.warning(
             "Received an empty ticker list for membership matrix. "
-            "Skipping churn simulation; resulting membership row will be empty."
+            "The resulting membership row will be empty."
         )
 
     today = pd.to_datetime(date.today())
